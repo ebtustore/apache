@@ -1,0 +1,48 @@
+---
+- name: Install Apache on Amazon Linux 2023
+  hosts: all
+  become: true
+  gather_facts: true
+
+  vars:
+    apache_service_name: httpd
+    apache_packages:
+      - httpd
+      - mod_ssl
+
+  tasks:
+    - name: Update package metadata
+      ansible.builtin.dnf:
+        update_cache: true
+
+    - name: Install Apache packages
+      ansible.builtin.dnf:
+        name: "{{ apache_packages }}"
+        state: present
+
+    - name: Create a simple index page
+      ansible.builtin.copy:
+        dest: /var/www/html/index.html
+        content: |
+          <html>
+          <head><title>Apache OK</title></head>
+          <body><h1>Apache criado pelo Ucloud</h1></body>
+          </html>
+        owner: apache
+        group: apache
+        mode: "0644"
+
+    - name: Enable and start Apache
+      ansible.builtin.service:
+        name: "{{ apache_service_name }}"
+        state: started
+        enabled: true
+
+    - name: Validate Apache is running
+      ansible.builtin.command: systemctl is-active httpd
+      register: apache_status
+      changed_when: false
+
+    - name: Show Apache status
+      ansible.builtin.debug:
+        msg: "Apache status: {{ apache_status.stdout }}"
